@@ -1,6 +1,6 @@
 # Terraform Lambda Provider
 
-Custom provider for Terraform to make creating lambda functions easier.
+Custom provider for Terraform to working with AWS Lambda easier.
 
 This provider only compiles and zips up your code. You should rely on other AWS resources to deploy the zip files.
 
@@ -38,7 +38,7 @@ output "test_path" {
 
 ## Motivation
 
-This provider does 2 things: it compiles the function directory using `go build` and zips up the resulting.
+This provider does 2 things: it compiles the function directory using `go build` and zips up the resulting binary (along with anything else in that folder).
 
 I first tried doing it with Terraform's built-in functionality, but it got really messy. This provider takes care of the details where Terraform falls short.
 
