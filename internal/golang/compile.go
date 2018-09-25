@@ -28,11 +28,3 @@ func Compile(src string, dst string, env map[string]string) error {
 
 	return nil
 }
-
-// cleanup our function
-func rmrf(filename string) error {
-	if err := os.RemoveAll(filename); err != nil {
-		return err
-	}
-	return nil
-}
