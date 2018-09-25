@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -50,7 +49,11 @@ func resourceGoCreate(d *schema.ResourceData, meta interface{}) error {
 	source := d.Get("source").(string)
 
 	// check to make sure the source exists
-	if _, err := os.Stat(source); err != nil {
+	if stat, err := os.Stat(source); err != nil {
+		d.SetId("")
+		return err
+	} else if !stat.IsDir() {
+		d.SetId("")
 		return err
 	}
 
@@ -96,12 +99,13 @@ func resourceGoCreate(d *schema.ResourceData, meta interface{}) error {
 
 func resourceGoRead(d *schema.ResourceData, meta interface{}) error {
 	source := d.Get("source").(string)
-	log.Println("source", source)
+
 	// check to make sure the source exists
-	if _, err := os.Stat(source); err != nil {
-		if os.IsNotExist(err) {
-			d.SetId("")
-		}
+	if stat, err := os.Stat(source); err != nil {
+		d.SetId("")
+		return err
+	} else if !stat.IsDir() {
+		d.SetId("")
 		return err
 	}
 
@@ -149,10 +153,11 @@ func resourceGoUpdate(d *schema.ResourceData, meta interface{}) error {
 	source := d.Get("source").(string)
 
 	// check to make sure the source exists
-	if _, err := os.Stat(source); err != nil {
-		if os.IsNotExist(err) {
-			d.SetId("")
-		}
+	if stat, err := os.Stat(source); err != nil {
+		d.SetId("")
+		return err
+	} else if !stat.IsDir() {
+		d.SetId("")
 		return err
 	}
 
