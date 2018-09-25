@@ -47,8 +47,8 @@ For zipping the folder, I would have liked to use Terraform's own [archive provi
 ## Installation
 
 ```sh
-go get github.com/matthewmueller/terraform-provider-zip
-go install github.com/matthewmueller/terraform-provider-zip
+go get github.com/matthewmueller/terraform-provider-lambda
+go install github.com/matthewmueller/terraform-provider-lambda
 ```
 
 ## License
