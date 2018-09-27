@@ -1,8 +1,10 @@
 package lambda
 
 import (
+	"crypto/md5"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"io"
 	"io/ioutil"
 	"os"
@@ -34,7 +36,12 @@ func resourceGo() *schema.Resource {
 			"base64sha256": &schema.Schema{
 				Type:        schema.TypeString,
 				Computed:    true,
-				Description: "SHA1 checksum made by zip",
+				Description: "SHA1 checksum of the zip file.",
+			},
+			"md5": &schema.Schema{
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "MD5 checksum of the zip file.",
 			},
 			"size": &schema.Schema{
 				Type:        schema.TypeInt,
@@ -68,20 +75,17 @@ func resourceGoCreate(d *schema.ResourceData, meta interface{}) error {
 	}
 	d.Set("size", len(buf))
 
-	// compute the hash
-	h := sha256.New()
-	h.Write(buf)
-	sha := h.Sum(nil)
-	hash := base64.StdEncoding.EncodeToString(sha)
-	urlHash := base64.URLEncoding.EncodeToString(sha)
-	d.Set("base64sha256", hash)
+	// compute the hashes
+	d.Set("base64sha256", base64SHA256(buf))
+	md5 := md5Hash(buf)
+	d.Set("md5", md5)
 
 	// emphemeral cache
 	cache, err := os.UserCacheDir()
 	if err != nil {
 		return err
 	}
-	path := filepath.Join(cache, "terraform-provider-lambda", urlHash+".zip")
+	path := filepath.Join(cache, "terraform-provider-lambda", md5+".zip")
 	d.Set("path", path)
 
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
@@ -93,7 +97,7 @@ func resourceGoCreate(d *schema.ResourceData, meta interface{}) error {
 		return err
 	}
 
-	d.SetId(hash)
+	d.SetId(md5)
 	return nil
 }
 
@@ -120,17 +124,14 @@ func resourceGoRead(d *schema.ResourceData, meta interface{}) error {
 	}
 	d.Set("size", len(buf))
 
-	// compute the hash
-	h := sha256.New()
-	h.Write(buf)
-	sha := h.Sum(nil)
-	hash := base64.StdEncoding.EncodeToString(sha)
-	urlHash := base64.URLEncoding.EncodeToString(sha)
-	d.Set("base64sha256", hash)
+	// compute the hashes
+	d.Set("base64sha256", base64SHA256(buf))
+	md5 := md5Hash(buf)
+	d.Set("md5", md5)
 
 	oldPath := d.Get("path").(string)
 	dir := filepath.Dir(oldPath)
-	newPath := filepath.Join(dir, urlHash+".zip")
+	newPath := filepath.Join(dir, md5+".zip")
 
 	if oldPath != newPath {
 		// remove the old path
@@ -145,7 +146,7 @@ func resourceGoRead(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	d.Set("path", newPath)
-	d.SetId(hash)
+	d.SetId(md5)
 	return nil
 }
 
@@ -172,17 +173,14 @@ func resourceGoUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 	d.Set("size", len(buf))
 
-	// compute the hash
-	h := sha256.New()
-	h.Write(buf)
-	sha := h.Sum(nil)
-	hash := base64.StdEncoding.EncodeToString(sha)
-	urlHash := base64.URLEncoding.EncodeToString(sha)
-	d.Set("base64sha256", hash)
+	// compute the hashes
+	d.Set("base64sha256", base64SHA256(buf))
+	md5 := md5Hash(buf)
+	d.Set("md5", md5)
 
 	oldPath := d.Get("path").(string)
 	dir := filepath.Dir(oldPath)
-	newPath := filepath.Join(dir, urlHash+".zip")
+	newPath := filepath.Join(dir, md5+".zip")
 	if oldPath != newPath {
 		// remove the old path
 		if err := rmrf(oldPath); err != nil {
@@ -196,13 +194,26 @@ func resourceGoUpdate(d *schema.ResourceData, meta interface{}) error {
 	}
 
 	d.Set("path", newPath)
-	d.SetId(hash)
+	d.SetId(md5)
 	return nil
 }
 
 func resourceGoDelete(d *schema.ResourceData, meta interface{}) error {
 	path := d.Get("path").(string)
 	return rmrf(path)
+}
+
+func base64SHA256(b []byte) string {
+	h := sha256.New()
+	h.Write(b)
+	sha := h.Sum(nil)
+	return base64.StdEncoding.EncodeToString(sha)
+}
+
+func md5Hash(b []byte) string {
+	m := md5.New()
+	m.Write(b)
+	return hex.EncodeToString(m.Sum(nil))
 }
 
 func compileGo(source string) (io.Reader, error) {

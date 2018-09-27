@@ -2,7 +2,6 @@ package golang
 
 import (
 	"errors"
-	"os"
 	"os/exec"
 )
 
