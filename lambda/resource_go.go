@@ -105,12 +105,15 @@ func resourceGoRead(d *schema.ResourceData, meta interface{}) error {
 	source := d.Get("source").(string)
 
 	// check to make sure the source exists
-	if stat, err := os.Stat(source); err != nil {
+	if stat, err := os.Stat(source); os.IsNotExist(err) {
+		d.SetId("")
+		return nil
+	} else if err != nil {
 		d.SetId("")
 		return err
 	} else if !stat.IsDir() {
 		d.SetId("")
-		return err
+		return nil
 	}
 
 	zip, err := compileGo(source)
